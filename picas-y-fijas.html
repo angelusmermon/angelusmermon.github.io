@@ -1,0 +1,756 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Picas & Fijas — AngelusMerMon Projects</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Syne:wght@400;700;800&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:       #080a0e;
+      --bg2:      #0f1218;
+      --bg3:      #161b24;
+      --border:   rgba(255,255,255,0.06);
+      --border-h: rgba(255,255,255,0.14);
+      --text:     #e8eaf0;
+      --muted:    #4a5060;
+      --p1:       #4fc3f7;   /* jugador 1 — azul */
+      --p2:       #f06292;   /* jugador 2 — rosa */
+      --fija:     #69f0ae;   /* verde */
+      --pica:     #ffd54f;   /* amarillo */
+      --mono:     'Share Tech Mono', monospace;
+      --sans:     'Syne', sans-serif;
+    }
+
+    html, body { height: 100%; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--sans);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    /* grain */
+    body::before {
+      content:'';
+      position:fixed; inset:0;
+      background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+      opacity:0.022; pointer-events:none; z-index:999;
+    }
+
+    /* ── Header ── */
+    header {
+      width: 100%; max-width: 960px;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 24px 32px;
+      border-bottom: 1px solid var(--border);
+    }
+    .logo {
+      font-family: var(--sans);
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--muted);
+      text-decoration: none;
+    }
+    .logo span { color: var(--text); }
+    .game-title {
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    /* ── Main wrapper ── */
+    main {
+      width: 100%; max-width: 960px;
+      padding: 0 32px 48px;
+      flex: 1;
+    }
+
+    /* ── Screens ── */
+    .screen { display: none; }
+    .screen.active { display: block; }
+
+    /* ── SETUP screen ── */
+    .setup-wrap {
+      min-height: 80vh;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      gap: 0;
+      text-align: center;
+    }
+    .setup-eyebrow {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 16px;
+    }
+    .setup-heading {
+      font-size: clamp(36px, 7vw, 72px);
+      font-weight: 800;
+      line-height: 1;
+      letter-spacing: -0.02em;
+      margin-bottom: 12px;
+    }
+    .setup-heading .p { color: var(--pica); }
+    .setup-heading .f { color: var(--fija); }
+    .setup-sub {
+      font-size: 14px;
+      color: var(--muted);
+      line-height: 1.7;
+      max-width: 400px;
+      margin-bottom: 48px;
+    }
+
+    .players-setup {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+      width: 100%;
+      max-width: 560px;
+      margin-bottom: 32px;
+    }
+    .player-box {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 24px;
+      display: flex; flex-direction: column; gap: 14px;
+      text-align: left;
+    }
+    .player-box-label {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+    }
+    .p1-color { color: var(--p1); }
+    .p2-color { color: var(--p2); }
+
+    .name-input, .num-input {
+      width: 100%;
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text);
+      font-family: var(--sans);
+      font-size: 14px;
+      padding: 10px 14px;
+      outline: none;
+      transition: border-color .2s;
+    }
+    .name-input:focus, .num-input:focus { border-color: var(--border-h); }
+    .num-input {
+      font-family: var(--mono);
+      font-size: 22px;
+      letter-spacing: 0.2em;
+      text-align: center;
+      padding: 12px;
+    }
+    .num-input::placeholder { color: var(--muted); letter-spacing: 0.1em; }
+    .field-label {
+      font-size: 11px;
+      color: var(--muted);
+      letter-spacing: 0.06em;
+      margin-bottom: 4px;
+    }
+
+    .error-msg {
+      font-size: 12px;
+      color: #f06292;
+      min-height: 16px;
+      font-family: var(--mono);
+    }
+
+    .btn-start {
+      background: var(--text);
+      color: var(--bg);
+      border: none;
+      border-radius: 8px;
+      font-family: var(--sans);
+      font-size: 14px;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      padding: 14px 40px;
+      cursor: pointer;
+      transition: opacity .2s, transform .15s;
+    }
+    .btn-start:hover { opacity: 0.88; transform: translateY(-1px); }
+
+    /* ── GAME screen ── */
+    .game-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 28px 0 20px;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 24px;
+    }
+    .turn-badge {
+      display: flex; align-items: center; gap: 10px;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+    .turn-dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      animation: pulse 1.4s ease-in-out infinite;
+    }
+    @keyframes pulse {
+      0%,100% { opacity: 1; transform: scale(1); }
+      50%      { opacity: 0.5; transform: scale(0.7); }
+    }
+    .turn-counter {
+      font-family: var(--mono);
+      font-size: 12px;
+      color: var(--muted);
+      letter-spacing: 0.08em;
+    }
+
+    /* Two-column game layout */
+    .game-cols {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+    }
+
+    .player-panel {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      overflow: hidden;
+      transition: border-color .3s;
+    }
+    .player-panel.active-panel { border-color: var(--panel-color); }
+
+    .panel-head {
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .panel-name {
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+    .panel-score {
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--muted);
+    }
+
+    /* History list */
+    .history {
+      padding: 12px;
+      min-height: 220px;
+      max-height: 320px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .history::-webkit-scrollbar { width: 4px; }
+    .history::-webkit-scrollbar-track { background: transparent; }
+    .history::-webkit-scrollbar-thumb { background: var(--border-h); border-radius: 2px; }
+
+    .hist-empty {
+      font-size: 12px;
+      color: var(--muted);
+      text-align: center;
+      margin: auto;
+      letter-spacing: 0.06em;
+    }
+
+    .hist-row {
+      display: flex; align-items: center; gap: 10px;
+      background: var(--bg3);
+      border-radius: 8px;
+      padding: 8px 12px;
+      animation: slideIn .2s ease;
+    }
+    @keyframes slideIn {
+      from { opacity:0; transform: translateX(-6px); }
+      to   { opacity:1; transform: translateX(0); }
+    }
+    .hist-turn {
+      font-family: var(--mono);
+      font-size: 10px;
+      color: var(--muted);
+      min-width: 24px;
+    }
+    .hist-number {
+      font-family: var(--mono);
+      font-size: 18px;
+      letter-spacing: 0.15em;
+      flex: 1;
+    }
+    .hist-result {
+      display: flex; gap: 8px;
+      font-family: var(--mono);
+      font-size: 12px;
+    }
+    .fijas-count { color: var(--fija); }
+    .picas-count { color: var(--pica); }
+
+    /* Input area */
+    .input-area {
+      padding: 14px;
+      border-top: 1px solid var(--border);
+      display: flex; gap: 8px;
+      align-items: center;
+    }
+    .guess-input {
+      flex: 1;
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text);
+      font-family: var(--mono);
+      font-size: 20px;
+      letter-spacing: 0.22em;
+      text-align: center;
+      padding: 10px 8px;
+      outline: none;
+      transition: border-color .2s;
+    }
+    .guess-input:focus { border-color: var(--border-h); }
+    .guess-input:disabled {
+      opacity: 0.3;
+      cursor: not-allowed;
+    }
+    .btn-guess {
+      background: var(--panel-color, var(--text));
+      color: var(--bg);
+      border: none;
+      border-radius: 8px;
+      font-family: var(--sans);
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      padding: 10px 16px;
+      cursor: pointer;
+      transition: opacity .2s;
+      white-space: nowrap;
+    }
+    .btn-guess:hover { opacity: 0.82; }
+    .btn-guess:disabled { opacity: 0.25; cursor: not-allowed; }
+
+    .input-error {
+      font-size: 11px;
+      color: var(--p2);
+      font-family: var(--mono);
+      padding: 0 14px 10px;
+      min-height: 20px;
+    }
+
+    /* Legend */
+    .legend {
+      display: flex; gap: 20px;
+      justify-content: center;
+      margin-top: 20px;
+      font-size: 12px;
+      color: var(--muted);
+      font-family: var(--mono);
+    }
+    .legend span { display: flex; align-items: center; gap: 6px; }
+    .leg-dot { width: 8px; height: 8px; border-radius: 50%; }
+
+    /* ── WIN screen ── */
+    .win-wrap {
+      min-height: 80vh;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      text-align: center;
+      gap: 0;
+    }
+    .win-eyebrow {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 16px;
+    }
+    .win-name {
+      font-size: clamp(40px, 8vw, 80px);
+      font-weight: 800;
+      line-height: 1;
+      letter-spacing: -0.02em;
+      margin-bottom: 8px;
+    }
+    .win-sub {
+      font-size: 14px;
+      color: var(--muted);
+      margin-bottom: 8px;
+    }
+    .win-number {
+      font-family: var(--mono);
+      font-size: 48px;
+      letter-spacing: 0.3em;
+      margin: 24px 0;
+      padding: 20px 32px;
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+    }
+    .win-stats {
+      font-size: 13px;
+      color: var(--muted);
+      font-family: var(--mono);
+      margin-bottom: 40px;
+    }
+    .btn-restart {
+      background: var(--text);
+      color: var(--bg);
+      border: none;
+      border-radius: 8px;
+      font-family: var(--sans);
+      font-size: 14px;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      padding: 14px 40px;
+      cursor: pointer;
+      transition: opacity .2s, transform .15s;
+    }
+    .btn-restart:hover { opacity: 0.88; transform: translateY(-1px); }
+
+    /* confetti */
+    .confetti-piece {
+      position: fixed;
+      width: 8px; height: 8px;
+      border-radius: 2px;
+      animation: confettiFall linear forwards;
+      pointer-events: none;
+      z-index: 998;
+    }
+    @keyframes confettiFall {
+      0%   { transform: translateY(-20px) rotate(0deg); opacity: 1; }
+      100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
+    }
+
+    @media (max-width: 600px) {
+      main { padding: 0 16px 40px; }
+      .players-setup { grid-template-columns: 1fr; }
+      .game-cols { grid-template-columns: 1fr; }
+      header { padding: 16px; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <a class="logo" href="index.html">← <span>AM</span>Projects</a>
+  <div class="game-title">Picas &amp; Fijas</div>
+</header>
+
+<main>
+
+  <!-- SETUP -->
+  <div class="screen active" id="screen-setup">
+    <div class="setup-wrap">
+      <div class="setup-eyebrow">AngelusMerMon Projects</div>
+      <h1 class="setup-heading">
+        <span class="p">Picas</span> &amp; <span class="f">Fijas</span>
+      </h1>
+      <p class="setup-sub">
+        Cada jugador escoge un número secreto de 4 dígitos (todos diferentes).<br>
+        Por turnos intentan adivinar el número del oponente.<br>
+        <strong>4 fijas</strong> = ¡ganaste!
+      </p>
+
+      <div class="players-setup">
+        <div class="player-box">
+          <div class="player-box-label p1-color">Jugador 1</div>
+          <div>
+            <div class="field-label">Nombre</div>
+            <input class="name-input" id="name1" type="text" placeholder="Tu nombre" maxlength="16"/>
+          </div>
+          <div>
+            <div class="field-label">Número secreto</div>
+            <input class="num-input" id="secret1" type="text" placeholder="····" maxlength="4" inputmode="numeric"/>
+          </div>
+          <div class="error-msg" id="err1"></div>
+        </div>
+        <div class="player-box">
+          <div class="player-box-label p2-color">Jugador 2</div>
+          <div>
+            <div class="field-label">Nombre</div>
+            <input class="name-input" id="name2" type="text" placeholder="Tu nombre" maxlength="16"/>
+          </div>
+          <div>
+            <div class="field-label">Número secreto</div>
+            <input class="num-input" id="secret2" type="text" placeholder="····" maxlength="4" inputmode="numeric"/>
+          </div>
+          <div class="error-msg" id="err2"></div>
+        </div>
+      </div>
+
+      <button class="btn-start" onclick="startGame()">Iniciar juego →</button>
+    </div>
+  </div>
+
+  <!-- GAME -->
+  <div class="screen" id="screen-game">
+    <div class="game-header">
+      <div class="turn-badge">
+        <div class="turn-dot" id="turnDot"></div>
+        <span id="turnLabel">Turno de —</span>
+      </div>
+      <div class="turn-counter">Ronda <span id="roundNum">1</span></div>
+    </div>
+
+    <div class="game-cols">
+      <!-- Panel Jugador 1 -->
+      <div class="player-panel" id="panel1" style="--panel-color: var(--p1)">
+        <div class="panel-head">
+          <div class="panel-name p1-color" id="pname1">Jugador 1</div>
+          <div class="panel-score" id="pscore1">0 intentos</div>
+        </div>
+        <div class="history" id="hist1">
+          <div class="hist-empty">Aún no hay intentos</div>
+        </div>
+        <div class="input-area">
+          <input class="guess-input" id="guess1" type="text" placeholder="····" maxlength="4" inputmode="numeric" disabled/>
+          <button class="btn-guess" id="btn1" onclick="makeGuess(1)" disabled>Enviar</button>
+        </div>
+        <div class="input-error" id="gerr1"></div>
+      </div>
+
+      <!-- Panel Jugador 2 -->
+      <div class="player-panel" id="panel2" style="--panel-color: var(--p2)">
+        <div class="panel-head">
+          <div class="panel-name p2-color" id="pname2">Jugador 2</div>
+          <div class="panel-score" id="pscore2">0 intentos</div>
+        </div>
+        <div class="history" id="hist2">
+          <div class="hist-empty">Aún no hay intentos</div>
+        </div>
+        <div class="input-area">
+          <input class="guess-input" id="guess2" type="text" placeholder="····" maxlength="4" inputmode="numeric" disabled/>
+          <button class="btn-guess" id="btn2" onclick="makeGuess(2)" disabled>Enviar</button>
+        </div>
+        <div class="input-error" id="gerr2"></div>
+      </div>
+    </div>
+
+    <div class="legend">
+      <span><div class="leg-dot" style="background:var(--fija)"></div>Fija = dígito en posición correcta</span>
+      <span><div class="leg-dot" style="background:var(--pica)"></div>Pica = dígito existe, posición incorrecta</span>
+    </div>
+  </div>
+
+  <!-- WIN -->
+  <div class="screen" id="screen-win">
+    <div class="win-wrap">
+      <div class="win-eyebrow">¡Tenemos ganador!</div>
+      <div class="win-name" id="winName">—</div>
+      <div class="win-sub">descifró el número secreto</div>
+      <div class="win-number" id="winNumber">····</div>
+      <div class="win-stats" id="winStats"></div>
+      <button class="btn-restart" onclick="resetGame()">Jugar de nuevo →</button>
+    </div>
+  </div>
+
+</main>
+
+<script>
+  // ── State ──
+  let state = {
+    names:   ['Jugador 1', 'Jugador 2'],
+    secrets: ['', ''],
+    guesses: [[], []],   // array de {number, fijas, picas}
+    turn:    0,          // 0 = J1, 1 = J2
+    round:   1,
+    started: false,
+  };
+
+  // ── Validation ──
+  function validateNumber(n) {
+    if (!/^\d{4}$/.test(n)) return 'Debe tener exactamente 4 dígitos.';
+    if (new Set(n).size !== 4) return 'Los 4 dígitos deben ser diferentes.';
+    return null;
+  }
+
+  // ── Picas & Fijas calc ──
+  function calcResult(secret, guess) {
+    let fijas = 0, picas = 0;
+    for (let i = 0; i < 4; i++) {
+      if (guess[i] === secret[i]) { fijas++; }
+      else if (secret.includes(guess[i])) { picas++; }
+    }
+    return { fijas, picas };
+  }
+
+  // ── Show screen ──
+  function showScreen(id) {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.getElementById('screen-' + id).classList.add('active');
+  }
+
+  // ── Start ──
+  function startGame() {
+    const n1 = document.getElementById('name1').value.trim() || 'Jugador 1';
+    const n2 = document.getElementById('name2').value.trim() || 'Jugador 2';
+    const s1 = document.getElementById('secret1').value.trim();
+    const s2 = document.getElementById('secret2').value.trim();
+
+    const e1 = validateNumber(s1);
+    const e2 = validateNumber(s2);
+    document.getElementById('err1').textContent = e1 || '';
+    document.getElementById('err2').textContent = e2 || '';
+    if (e1 || e2) return;
+
+    state = {
+      names:   [n1, n2],
+      secrets: [s1, s2],
+      guesses: [[], []],
+      turn:    0,
+      round:   1,
+    };
+
+    document.getElementById('pname1').textContent = n1;
+    document.getElementById('pname2').textContent = n2;
+    updateTurnUI();
+    showScreen('game');
+  }
+
+  // ── Update turn UI ──
+  function updateTurnUI() {
+    const t = state.turn;
+    const dot = document.getElementById('turnDot');
+    dot.style.background = t === 0 ? 'var(--p1)' : 'var(--p2)';
+    document.getElementById('turnLabel').textContent = 'Turno de ' + state.names[t];
+    document.getElementById('roundNum').textContent = state.round;
+
+    // Enable/disable inputs
+    [0, 1].forEach(p => {
+      const active = p === t;
+      document.getElementById('guess' + (p+1)).disabled = !active;
+      document.getElementById('btn'   + (p+1)).disabled = !active;
+      document.getElementById('panel' + (p+1)).classList.toggle('active-panel', active);
+      if (active) {
+        document.getElementById('guess' + (p+1)).value = '';
+        document.getElementById('guess' + (p+1)).focus();
+      }
+    });
+  }
+
+  // ── Make guess ──
+  function makeGuess(player) {
+    const idx   = player - 1;
+    const input = document.getElementById('guess' + player);
+    const errEl = document.getElementById('gerr'  + player);
+    const guess = input.value.trim();
+
+    const err = validateNumber(guess);
+    if (err) { errEl.textContent = err; return; }
+    errEl.textContent = '';
+
+    // The player guesses the OPPONENT's secret
+    const opponentIdx = 1 - idx;
+    const secret = state.secrets[opponentIdx];
+    const { fijas, picas } = calcResult(secret, guess);
+
+    state.guesses[idx].push({ guess, fijas, picas });
+    addHistoryRow(player, state.guesses[idx].length, guess, fijas, picas);
+    document.getElementById('pscore' + player).textContent =
+      state.guesses[idx].length + (state.guesses[idx].length === 1 ? ' intento' : ' intentos');
+
+    if (fijas === 4) {
+      setTimeout(() => endGame(idx), 300);
+      return;
+    }
+
+    // Alternate turn
+    state.turn = opponentIdx;
+    // Increment round when J2 finishes (both played)
+    if (state.turn === 0) state.round++;
+    updateTurnUI();
+  }
+
+  // ── Add history row ──
+  function addHistoryRow(player, turnN, guess, fijas, picas) {
+    const hist = document.getElementById('hist' + player);
+    const empty = hist.querySelector('.hist-empty');
+    if (empty) empty.remove();
+
+    const row = document.createElement('div');
+    row.className = 'hist-row';
+    row.innerHTML = `
+      <span class="hist-turn">#${turnN}</span>
+      <span class="hist-number">${guess}</span>
+      <span class="hist-result">
+        <span class="fijas-count">${fijas}F</span>
+        <span class="picas-count">${picas}P</span>
+      </span>
+    `;
+    hist.appendChild(row);
+    hist.scrollTop = hist.scrollHeight;
+  }
+
+  // ── End game ──
+  function endGame(winnerIdx) {
+    const loserIdx = 1 - winnerIdx;
+    const winEl = document.getElementById('winName');
+    winEl.textContent = state.names[winnerIdx];
+    winEl.style.color = winnerIdx === 0 ? 'var(--p1)' : 'var(--p2)';
+    document.getElementById('winNumber').textContent = state.secrets[loserIdx];
+    document.getElementById('winStats').textContent =
+      `en ${state.guesses[winnerIdx].length} intento${state.guesses[winnerIdx].length !== 1 ? 's' : ''} · ronda ${state.round}`;
+    showScreen('win');
+    launchConfetti();
+  }
+
+  // ── Reset ──
+  function resetGame() {
+    ['name1','name2','secret1','secret2'].forEach(id => document.getElementById(id).value = '');
+    ['err1','err2'].forEach(id => document.getElementById(id).textContent = '');
+    ['hist1','hist2'].forEach(id => document.getElementById(id).innerHTML = '<div class="hist-empty">Aún no hay intentos</div>');
+    ['pscore1','pscore2'].forEach(id => document.getElementById(id).textContent = '0 intentos');
+    ['gerr1','gerr2'].forEach(id => document.getElementById(id).textContent = '');
+    showScreen('setup');
+  }
+
+  // ── Enter key support ──
+  ['guess1','guess2'].forEach((id, i) => {
+    document.getElementById(id).addEventListener('keydown', e => {
+      if (e.key === 'Enter') makeGuess(i + 1);
+    });
+  });
+
+  // ── Confetti ──
+  function launchConfetti() {
+    const colors = ['var(--p1)','var(--p2)','var(--fija)','var(--pica)','#fff'];
+    for (let i = 0; i < 80; i++) {
+      const el = document.createElement('div');
+      el.className = 'confetti-piece';
+      el.style.cssText = `
+        left: ${Math.random()*100}vw;
+        top: -10px;
+        background: ${colors[Math.floor(Math.random()*colors.length)]};
+        animation-duration: ${1.5 + Math.random()*2}s;
+        animation-delay: ${Math.random()*0.8}s;
+        width: ${6 + Math.random()*6}px;
+        height: ${6 + Math.random()*6}px;
+        border-radius: ${Math.random() > 0.5 ? '50%' : '2px'};
+      `;
+      document.body.appendChild(el);
+      el.addEventListener('animationend', () => el.remove());
+    }
+  }
+</script>
+</body>
+</html>
