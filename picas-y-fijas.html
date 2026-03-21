@@ -174,6 +174,44 @@
       font-family: var(--mono);
     }
 
+    .btn-confirm {
+      width: 100%;
+      border: none;
+      border-radius: 8px;
+      font-family: var(--sans);
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      padding: 10px 16px;
+      cursor: pointer;
+      transition: opacity .2s, transform .15s;
+    }
+    .btn-confirm:hover:not(:disabled) { opacity: 0.82; transform: translateY(-1px); }
+    .btn-confirm:disabled { opacity: 0.28; cursor: not-allowed; transform: none; }
+    .btn-confirm-1 { background: var(--p1); color: var(--bg); }
+    .btn-confirm-2 { background: var(--p2); color: var(--bg); }
+
+    .confirmed-badge {
+      display: none;
+      align-items: center; justify-content: center; gap: 8px;
+      padding: 10px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+    .confirmed-badge.show { display: flex; }
+    .check-icon { font-size: 14px; }
+
+    .player-box.confirmed {
+      border-color: var(--confirm-color);
+      opacity: 0.7;
+    }
+
     .btn-start {
       background: var(--text);
       color: var(--bg);
@@ -187,7 +225,8 @@
       cursor: pointer;
       transition: opacity .2s, transform .15s;
     }
-    .btn-start:hover { opacity: 0.88; transform: translateY(-1px); }
+    .btn-start:hover:not(:disabled) { opacity: 0.88; transform: translateY(-1px); }
+    .btn-start:disabled { opacity: 0.28; cursor: not-allowed; transform: none; }
 
     /* ── GAME screen ── */
     .game-header {
@@ -472,7 +511,7 @@
       </p>
 
       <div class="players-setup">
-        <div class="player-box">
+        <div class="player-box" id="box1" style="--confirm-color: var(--p1)">
           <div class="player-box-label p1-color">Jugador 1</div>
           <div>
             <div class="field-label">Nombre</div>
@@ -480,11 +519,13 @@
           </div>
           <div>
             <div class="field-label">Número secreto</div>
-            <input class="num-input" id="secret1" type="text" placeholder="····" maxlength="4" inputmode="numeric"/>
+            <input class="num-input" id="secret1" type="password" placeholder="····" maxlength="4" inputmode="numeric"/>
           </div>
           <div class="error-msg" id="err1"></div>
+          <button class="btn-confirm btn-confirm-1" id="confirmBtn1" onclick="confirmPlayer(1)">Confirmar →</button>
+          <div class="confirmed-badge" id="badge1"><span class="check-icon">✓</span> Listo</div>
         </div>
-        <div class="player-box">
+        <div class="player-box" id="box2" style="--confirm-color: var(--p2)">
           <div class="player-box-label p2-color">Jugador 2</div>
           <div>
             <div class="field-label">Nombre</div>
@@ -492,13 +533,15 @@
           </div>
           <div>
             <div class="field-label">Número secreto</div>
-            <input class="num-input" id="secret2" type="text" placeholder="····" maxlength="4" inputmode="numeric"/>
+            <input class="num-input" id="secret2" type="password" placeholder="····" maxlength="4" inputmode="numeric"/>
           </div>
           <div class="error-msg" id="err2"></div>
+          <button class="btn-confirm btn-confirm-2" id="confirmBtn2" onclick="confirmPlayer(2)">Confirmar →</button>
+          <div class="confirmed-badge" id="badge2"><span class="check-icon">✓</span> Listo</div>
         </div>
       </div>
 
-      <button class="btn-start" onclick="startGame()">Iniciar juego →</button>
+      <button class="btn-start" id="btnStart" onclick="startGame()" disabled>Iniciar juego →</button>
     </div>
   </div>
 
@@ -600,22 +643,49 @@
     document.getElementById('screen-' + id).classList.add('active');
   }
 
+  // ── Confirm player ──
+  const confirmed = [false, false];
+  const secretStore = ['', ''];
+
+  function confirmPlayer(player) {
+    const idx    = player - 1;
+    const secret = document.getElementById('secret' + player).value.trim();
+    const errEl  = document.getElementById('err' + player);
+
+    const err = validateNumber(secret);
+    if (err) { errEl.textContent = err; return; }
+    errEl.textContent = '';
+
+    // Store secret before masking
+    secretStore[idx] = secret;
+    confirmed[idx]   = true;
+
+    // Lock and mask inputs
+    document.getElementById('name'   + player).disabled = true;
+    document.getElementById('secret' + player).disabled = true;
+    document.getElementById('secret' + player).value    = '····';
+
+    // Swap button for badge
+    document.getElementById('confirmBtn' + player).style.display = 'none';
+    document.getElementById('badge'      + player).classList.add('show');
+    document.getElementById('box'        + player).classList.add('confirmed');
+
+    // Enable start only when both confirmed
+    if (confirmed[0] && confirmed[1]) {
+      document.getElementById('btnStart').disabled = false;
+    }
+  }
+
   // ── Start ──
   function startGame() {
+    if (!confirmed[0] || !confirmed[1]) return;
+
     const n1 = document.getElementById('name1').value.trim() || 'Jugador 1';
     const n2 = document.getElementById('name2').value.trim() || 'Jugador 2';
-    const s1 = document.getElementById('secret1').value.trim();
-    const s2 = document.getElementById('secret2').value.trim();
-
-    const e1 = validateNumber(s1);
-    const e2 = validateNumber(s2);
-    document.getElementById('err1').textContent = e1 || '';
-    document.getElementById('err2').textContent = e2 || '';
-    if (e1 || e2) return;
 
     state = {
       names:   [n1, n2],
-      secrets: [s1, s2],
+      secrets: [secretStore[0], secretStore[1]],
       guesses: [[], []],
       turn:    0,
       round:   1,
@@ -716,11 +786,23 @@
 
   // ── Reset ──
   function resetGame() {
-    ['name1','name2','secret1','secret2'].forEach(id => document.getElementById(id).value = '');
-    ['err1','err2'].forEach(id => document.getElementById(id).textContent = '');
+    confirmed[0] = false; confirmed[1] = false;
+    secretStore[0] = ''; secretStore[1] = '';
+
+    [1,2].forEach(p => {
+      document.getElementById('name'       + p).disabled = false;
+      document.getElementById('name'       + p).value    = '';
+      document.getElementById('secret'     + p).disabled = false;
+      document.getElementById('secret'     + p).value    = '';
+      document.getElementById('err'        + p).textContent = '';
+      document.getElementById('confirmBtn' + p).style.display = '';
+      document.getElementById('badge'      + p).classList.remove('show');
+      document.getElementById('box'        + p).classList.remove('confirmed');
+    });
     ['hist1','hist2'].forEach(id => document.getElementById(id).innerHTML = '<div class="hist-empty">Aún no hay intentos</div>');
     ['pscore1','pscore2'].forEach(id => document.getElementById(id).textContent = '0 intentos');
     ['gerr1','gerr2'].forEach(id => document.getElementById(id).textContent = '');
+    document.getElementById('btnStart').disabled = true;
     showScreen('setup');
   }
 
