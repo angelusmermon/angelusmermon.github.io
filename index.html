@@ -515,7 +515,7 @@
       <div class="filter-bar">
         <button class="filter-btn active" onclick="filterProjects('all', this)">Todos</button>
         <button class="filter-btn" onclick="filterProjects('herramienta', this)">Herramientas</button>
-        <button class="filter-btn" onclick="filterProjects('gestion', this)">Gestión</button>
+        <button class="filter-btn" onclick="filterProjects('juego', this)">Juegos</button>
         <button class="filter-btn" onclick="filterProjects('datos', this)">Datos</button>
       </div>
     </div>
@@ -534,13 +534,13 @@
       </div>
 
       <!-- Card 2 -->
-      <div class="project-card" data-category="gestion" style="--card-accent: #7eb8a4">
-        <div class="card-tag" style="background:rgba(126,184,164,0.08)"><div class="card-dot"></div> Gestión</div>
-        <div class="card-title">Tablero Kanban</div>
-        <div class="card-desc">Gestión visual de tareas con columnas Por hacer, En progreso y Completado. Sin registro.</div>
+      <div class="project-card" data-category="juego" style="--card-accent: #7eb8a4">
+        <div class="card-tag" style="background:rgba(126,184,164,0.08)"><div class="card-dot"></div> Juego</div>
+        <div class="card-title">Picas &amp; Fijas</div>
+        <div class="card-desc">Juego de lógica y estrategia para dos jugadores. Adivina el número secreto de tu oponente antes de que él adivine el tuyo.</div>
         <div class="card-footer">
-          <span class="card-status wip">En desarrollo</span>
-          <a href="#" class="card-arrow">→</a>
+          <span class="card-status live">● En línea</span>
+          <a href="picas-y-fijas.html" class="card-arrow">→</a>
         </div>
       </div>
 
@@ -608,7 +608,7 @@
     </p>
     <div class="contact-actions">
       <a href="https://github.com/angelusmermon" target="_blank" class="btn btn-primary">Ver GitHub</a>
-      <a href="mailto:tu@email.com" class="btn btn-ghost">Enviar mensaje</a>
+      <a href="/cdn-cgi/l/email-protection#33474673565e525a5f1d505c5e" class="btn btn-ghost">Enviar mensaje</a>
     </div>
   </section>
 
@@ -618,7 +618,7 @@
     <p>© 2025 AngelusMerMon · Construido con HTML, CSS & JS</p>
   </footer>
 
-  <script>
+  <script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
     function filterProjects(category, btn) {
       document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
@@ -643,10 +643,4 @@
 
     document.querySelectorAll('.project-card, .about-box').forEach(el => {
       el.style.opacity = '0';
-      el.style.transform = 'translateY(16px)';
-      el.style.transition = 'opacity .5s ease, transform .5s ease';
-      observer.observe(el);
-    });
-  </script>
-</body>
-</html>
+      el.style.transform = 'translat
