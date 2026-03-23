@@ -676,8 +676,8 @@
   async function autoCleanTrash() {
     const cutoff = Date.now() - retentionDays * 86400000;
     for (const item of trashItems) {
-      const t = item.deletedAt?.toMillis?.() ?? 0;
-      if (t < cutoff) await deleteDoc(doc(db, "trash", item.docId));
+      const t = item.deletedAt?.toMillis?.();
+      if (t && t < cutoff) await deleteDoc(doc(db, "trash", item.docId));
     }
   }
 
