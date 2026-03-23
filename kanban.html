@@ -981,7 +981,12 @@
         <button class="btn btn-ghost" style="font-size:0.78rem;padding:5px 10px" data-restore="${item.id}">↩ Restaurar</button>
         <button class="btn btn-danger" style="font-size:0.78rem;padding:5px 10px" data-perm-del="${item.id}">✕</button>
       `;
-      el.querySelector("[data-restore]").addEventListener("click", () => restoreCard(item));
+      el.querySelector("[data-restore]").addEventListener("click", async (e) => {
+        const btn = e.currentTarget;
+        btn.disabled = true;
+        btn.textContent = "Restaurando…";
+        await restoreCard(item);
+      });
       el.querySelector("[data-perm-del]").addEventListener("click", () => permDeleteCard(item.id));
       list.appendChild(el);
     });
@@ -989,10 +994,13 @@
 
   async function restoreCard(item) {
     const { id, deletedAt, ...cardData } = item;
-    cardData.columnId = columns[0]?.id ?? "";
+    // Bug 1: restaurar a la columna original; si fue eliminada, caer a la primera columna
+    const originalColExists = columns.some(c => c.id === cardData.columnId);
+    if (!originalColExists) cardData.columnId = columns[0]?.id ?? "";
     cardData.order = Date.now();
-    await addDoc(cardsRef, cardData);
+    // Bug 2 & 3: eliminar de papelera PRIMERO para evitar condición de carrera
     await deleteDoc(doc(db, "trash", id));
+    await addDoc(cardsRef, cardData);
   }
 
   async function permDeleteCard(id) {
