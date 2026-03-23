@@ -666,7 +666,7 @@
     });
 
     onSnapshot(query(trashRef, orderBy("deletedAt")), snap => {
-      trashItems = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      trashItems = snap.docs.map(d => ({ docId: d.id, ...d.data() }));
       autoCleanTrash();
       renderTrash();
     });
@@ -677,7 +677,7 @@
     const cutoff = Date.now() - retentionDays * 86400000;
     for (const item of trashItems) {
       const t = item.deletedAt?.toMillis?.() ?? 0;
-      if (t < cutoff) await deleteDoc(doc(db, "trash", item.id));
+      if (t < cutoff) await deleteDoc(doc(db, "trash", item.docId));
     }
   }
 
@@ -978,8 +978,8 @@
           <div class="trash-item-title">${escHtml(item.title)}</div>
           <div class="trash-item-meta">Eliminado: ${deleted} · ${item.tag ?? ""} · ${item.priority ?? ""}</div>
         </div>
-        <button class="btn btn-ghost" style="font-size:0.78rem;padding:5px 10px" data-restore="${item.id}">↩ Restaurar</button>
-        <button class="btn btn-danger" style="font-size:0.78rem;padding:5px 10px" data-perm-del="${item.id}">✕</button>
+        <button class="btn btn-ghost" style="font-size:0.78rem;padding:5px 10px" data-restore="${item.docId}">↩ Restaurar</button>
+        <button class="btn btn-danger" style="font-size:0.78rem;padding:5px 10px" data-perm-del="${item.docId}">✕</button>
       `;
       el.querySelector("[data-restore]").addEventListener("click", async (e) => {
         const btn = e.currentTarget;
@@ -987,38 +987,30 @@
         btn.textContent = "Restaurando…";
         await restoreCard(item);
       });
-      el.querySelector("[data-perm-del]").addEventListener("click", () => permDeleteCard(item.id));
+      el.querySelector("[data-perm-del]").addEventListener("click", () => permDeleteCard(item.docId));
       list.appendChild(el);
     });
   }
 
   async function restoreCard(item) {
-    const { id, deletedAt, ...cardData } = item;
-    console.log("🔍 restoreCard — item.id:", id, "| item completo:", item);
+    const { docId, deletedAt, ...cardData } = item;
     // Bug 1: restaurar a la columna original; si fue eliminada, caer a la primera columna
     const originalColExists = columns.some(c => c.id === cardData.columnId);
     if (!originalColExists) cardData.columnId = columns[0]?.id ?? "";
     cardData.order = Date.now();
-    // Bug 2 & 3: eliminar de papelera PRIMERO para evitar condición de carrera
-    try {
-      const trashDocRef = doc(db, "trash", id);
-      console.log("🗑 Intentando deleteDoc en path:", trashDocRef.path);
-      await deleteDoc(trashDocRef);
-      console.log("✅ deleteDoc completado");
-    } catch(e) {
-      console.error("❌ Error en deleteDoc:", e);
-    }
+    // Bug 2 & 3: eliminar de papelera PRIMERO usando el ID real del documento
+    await deleteDoc(doc(db, "trash", docId));
     await addDoc(cardsRef, cardData);
   }
 
-  async function permDeleteCard(id) {
-    await deleteDoc(doc(db, "trash", id));
+  async function permDeleteCard(docId) {
+    await deleteDoc(doc(db, "trash", docId));
   }
 
   document.getElementById("btn-empty-trash").addEventListener("click", async () => {
     if (!trashItems.length) return;
     if (!confirm("¿Vaciar toda la papelera? Esta acción no se puede deshacer.")) return;
-    for (const item of trashItems) await deleteDoc(doc(db, "trash", item.id));
+    for (const item of trashItems) await deleteDoc(doc(db, "trash", item.docId));
   });
 
   document.getElementById("retention-days").addEventListener("change", async e => {
