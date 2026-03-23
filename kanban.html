@@ -825,11 +825,24 @@
   });
 
   // ── Move to trash ──
+  // ── Extrae solo campos de negocio (nunca IDs internos) ──
+  function cardData(card) {
+    return {
+      title:    card.title    ?? "",
+      desc:     card.desc     ?? "",
+      tag:      card.tag      ?? "",
+      priority: card.priority ?? "",
+      date:     card.date     ?? "",
+      columnId: card.columnId ?? "",
+      order:    card.order    ?? 0,
+    };
+  }
+
   async function moveToTrash(cardId) {
     const card = cards.find(c => c.docId === cardId);
     if (!card) return;
     setStatus("Moviendo a papelera…", "sync");
-    await addDoc(trashRef, { ...card, deletedAt: serverTimestamp() });
+    await addDoc(trashRef, { ...cardData(card), deletedAt: serverTimestamp() });
     await deleteDoc(doc(db, "cards", cardId));
     setStatus("Tarjeta eliminada (en papelera)", "ok");
   }
@@ -993,14 +1006,17 @@
   }
 
   async function restoreCard(item) {
-    const { docId, deletedAt, ...cardData } = item;
-    // Bug 1: restaurar a la columna original; si fue eliminada, caer a la primera columna
-    const originalColExists = columns.some(c => c.id === cardData.columnId);
-    if (!originalColExists) cardData.columnId = columns[0]?.id ?? "";
-    cardData.order = Date.now();
-    // Bug 2 & 3: eliminar de papelera PRIMERO usando el ID real del documento
-    await deleteDoc(doc(db, "trash", docId));
-    await addDoc(cardsRef, cardData);
+    // Determinar columna destino: original si existe, si no la primera
+    const originalColExists = columns.some(c => c.docId === item.columnId);
+    const targetColId = originalColExists ? item.columnId : columns[0]?.docId ?? "";
+    const data = {
+      ...cardData(item),
+      columnId: targetColId,
+      order: Date.now(),
+    };
+    // Eliminar de papelera PRIMERO, luego restaurar en cards
+    await deleteDoc(doc(db, "trash", item.docId));
+    await addDoc(cardsRef, data);
   }
 
   async function permDeleteCard(docId) {
