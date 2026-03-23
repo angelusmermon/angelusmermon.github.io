@@ -994,12 +994,20 @@
 
   async function restoreCard(item) {
     const { id, deletedAt, ...cardData } = item;
+    console.log("🔍 restoreCard — item.id:", id, "| item completo:", item);
     // Bug 1: restaurar a la columna original; si fue eliminada, caer a la primera columna
     const originalColExists = columns.some(c => c.id === cardData.columnId);
     if (!originalColExists) cardData.columnId = columns[0]?.id ?? "";
     cardData.order = Date.now();
     // Bug 2 & 3: eliminar de papelera PRIMERO para evitar condición de carrera
-    await deleteDoc(doc(db, "trash", id));
+    try {
+      const trashDocRef = doc(db, "trash", id);
+      console.log("🗑 Intentando deleteDoc en path:", trashDocRef.path);
+      await deleteDoc(trashDocRef);
+      console.log("✅ deleteDoc completado");
+    } catch(e) {
+      console.error("❌ Error en deleteDoc:", e);
+    }
     await addDoc(cardsRef, cardData);
   }
 
