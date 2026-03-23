@@ -655,12 +655,12 @@
   // ── Real-time listeners ──
   function startListeners() {
     onSnapshot(query(colsRef, orderBy("order")), snap => {
-      columns = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      columns = snap.docs.map(d => ({ docId: d.id, ...d.data() }));
       render();
     });
 
     onSnapshot(query(cardsRef, orderBy("order")), snap => {
-      cards = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      cards = snap.docs.map(d => ({ docId: d.id, ...d.data() }));
       render();
       setStatus("✓ Sincronizado con Firebase", "ok");
     });
@@ -691,25 +691,25 @@
     board.innerHTML = "";
 
     columns.forEach((col, ci) => {
-      const colCards = cards.filter(c => c.columnId === col.id);
+      const colCards = cards.filter(c => c.columnId === col.docId);
       const el = document.createElement("div");
       el.className = "column";
-      el.dataset.colId = col.id;
+      el.dataset.colId = col.docId;
 
       el.innerHTML = `
         <div class="column-header">
           <div class="col-title-wrap">
             <div class="col-dot" style="background:${colColor(ci)}"></div>
-            <span class="col-title" data-col-id="${col.id}">${escHtml(col.name)}</span>
+            <span class="col-title" data-col-id="${col.docId}">${escHtml(col.name)}</span>
             <span class="col-count">${colCards.length}</span>
           </div>
           <div class="col-actions">
-            <button class="col-btn" title="Agregar tarjeta" data-col-add="${col.id}">＋</button>
-            <button class="col-btn del" title="Eliminar columna" data-col-del="${col.id}">✕</button>
+            <button class="col-btn" title="Agregar tarjeta" data-col-add="${col.docId}">＋</button>
+            <button class="col-btn del" title="Eliminar columna" data-col-del="${col.docId}">✕</button>
           </div>
         </div>
-        <div class="cards-list" data-col-id="${col.id}"></div>
-        <button class="add-card-btn" data-col-add="${col.id}">＋ Agregar tarjeta</button>
+        <div class="cards-list" data-col-id="${col.docId}"></div>
+        <button class="add-card-btn" data-col-add="${col.docId}">＋ Agregar tarjeta</button>
       `;
 
       const list = el.querySelector(".cards-list");
@@ -726,9 +726,9 @@
       el.addEventListener("drop", async e => {
         e.preventDefault();
         el.classList.remove("drag-over");
-        if (dragCardId && dragCardId !== col.id) {
+        if (dragCardId && dragCardId !== col.docId) {
           setStatus("Guardando…", "sync");
-          await updateDoc(doc(db, "cards", dragCardId), { columnId: col.id });
+          await updateDoc(doc(db, "cards", dragCardId), { columnId: col.docId });
         }
       });
 
@@ -766,7 +766,7 @@
     const el = document.createElement("div");
     el.className = "card";
     el.draggable = true;
-    el.dataset.cardId = card.id;
+    el.dataset.cardId = card.docId;
 
     const dateStr = card.date
       ? `<span class="card-date">📅 ${card.date}</span>`
@@ -775,7 +775,7 @@
     el.innerHTML = `
       <div class="card-top">
         <div class="card-title">${escHtml(card.title)}</div>
-        <button class="card-menu-btn" data-card-id="${card.id}">⋯</button>
+        <button class="card-menu-btn" data-card-id="${card.docId}">⋯</button>
       </div>
       ${card.desc ? `<div class="card-desc">${escHtml(card.desc)}</div>` : ""}
       <div class="card-footer">
@@ -787,7 +787,7 @@
 
     // Drag
     el.addEventListener("dragstart", () => {
-      dragCardId = card.id;
+      dragCardId = card.docId;
       setTimeout(() => el.classList.add("dragging"), 0);
     });
     el.addEventListener("dragend", () => {
@@ -798,7 +798,7 @@
     // Context menu
     el.querySelector(".card-menu-btn").addEventListener("click", ev => {
       ev.stopPropagation();
-      ctxCardId = card.id;
+      ctxCardId = card.docId;
       showCtxMenu(ev.clientX, ev.clientY);
     });
 
@@ -826,7 +826,7 @@
 
   // ── Move to trash ──
   async function moveToTrash(cardId) {
-    const card = cards.find(c => c.id === cardId);
+    const card = cards.find(c => c.docId === cardId);
     if (!card) return;
     setStatus("Moviendo a papelera…", "sync");
     await addDoc(trashRef, { ...card, deletedAt: serverTimestamp() });
@@ -838,7 +838,7 @@
   const cardModal = document.getElementById("card-modal");
   function openCardModal(cardId = null, colId = null) {
     editingCardId = cardId;
-    const card = cardId ? cards.find(c => c.id === cardId) : null;
+    const card = cardId ? cards.find(c => c.docId === cardId) : null;
     document.getElementById("card-modal-title").textContent = card ? "Editar Tarjeta" : "Nueva Tarjeta";
     document.getElementById("f-title").value    = card?.title    ?? "";
     document.getElementById("f-desc").value     = card?.desc     ?? "";
@@ -846,7 +846,7 @@
     document.getElementById("f-priority").value = card?.priority ?? "media";
     document.getElementById("f-date").value     = card?.date     ?? "";
 
-    populateColSelect(card?.columnId ?? colId ?? columns[0]?.id);
+    populateColSelect(card?.columnId ?? colId ?? columns[0]?.docId);
     cardModal.classList.add("show");
     document.getElementById("f-title").focus();
   }
@@ -879,7 +879,7 @@
   function populateColSelect(selectedId = null) {
     const sel = document.getElementById("f-column");
     sel.innerHTML = columns.map(c =>
-      `<option value="${c.id}" ${c.id === selectedId ? "selected" : ""}>${escHtml(c.name)}</option>`
+      `<option value="${c.docId}" ${c.docId === selectedId ? "selected" : ""}>${escHtml(c.name)}</option>`
     ).join("");
   }
 
@@ -903,21 +903,21 @@
 
   // ── Delete column ──
   async function confirmDeleteCol(colId) {
-    const col = columns.find(c => c.id === colId);
+    const col = columns.find(c => c.docId === colId);
     const colCards = cards.filter(c => c.columnId === colId);
     const msg = colCards.length
       ? `¿Eliminar columna "${col.name}"? Las ${colCards.length} tarjeta(s) se moverán a papelera.`
       : `¿Eliminar columna "${col.name}"?`;
     if (!confirm(msg)) return;
     setStatus("Eliminando columna…", "sync");
-    for (const card of colCards) await moveToTrash(card.id);
+    for (const card of colCards) await moveToTrash(card.docId);
     await deleteDoc(doc(db, "columns", colId));
   }
 
   // ── Inline col title edit ──
   function startColEdit(titleEl) {
     const colId = titleEl.dataset.colId;
-    const col = columns.find(c => c.id === colId);
+    const col = columns.find(c => c.docId === colId);
     const input = document.createElement("input");
     input.className = "col-title-input";
     input.value = col.name;
@@ -938,13 +938,13 @@
   // ── Move Modal ──
   const moveModal = document.getElementById("move-modal");
   function openMoveModal(cardId) {
-    const card = cards.find(c => c.id === cardId);
+    const card = cards.find(c => c.docId === cardId);
     const list = document.getElementById("move-col-list");
     list.innerHTML = columns.map(col => `
-      <button class="btn ${col.id === card.columnId ? "btn-primary" : "btn-ghost"}"
+      <button class="btn ${col.docId === card.columnId ? "btn-primary" : "btn-ghost"}"
         style="justify-content:flex-start"
-        data-move-to="${col.id}">
-        ${col.id === card.columnId ? "✓ " : ""}${escHtml(col.name)}
+        data-move-to="${col.docId}">
+        ${col.docId === card.columnId ? "✓ " : ""}${escHtml(col.name)}
       </button>
     `).join("");
     list.querySelectorAll("[data-move-to]").forEach(btn => {
