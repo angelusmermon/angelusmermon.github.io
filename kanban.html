@@ -840,11 +840,20 @@
 
   async function moveToTrash(cardId) {
     const card = cards.find(c => c.docId === cardId);
-    if (!card) return;
+    if (!card) { console.error("❌ moveToTrash: card no encontrada para docId:", cardId); return; }
     setStatus("Moviendo a papelera…", "sync");
-    await addDoc(trashRef, { ...cardData(card), deletedAt: serverTimestamp() });
-    await deleteDoc(doc(db, "cards", cardId));
-    setStatus("Tarjeta eliminada (en papelera)", "ok");
+    try {
+      const payload = { ...cardData(card), deletedAt: serverTimestamp() };
+      console.log("📦 moveToTrash payload:", payload);
+      await addDoc(trashRef, payload);
+      console.log("✅ addDoc a trash OK");
+      await deleteDoc(doc(db, "cards", cardId));
+      console.log("✅ deleteDoc de cards OK");
+      setStatus("Tarjeta eliminada (en papelera)", "ok");
+    } catch(e) {
+      console.error("❌ moveToTrash error:", e);
+      setStatus("Error al eliminar: " + e.message, "err");
+    }
   }
 
   // ── Card Modal ──
