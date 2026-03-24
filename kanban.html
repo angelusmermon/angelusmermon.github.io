@@ -667,12 +667,11 @@
 
     onSnapshot(query(trashRef, orderBy("deletedAt")), snap => {
       trashItems = snap.docs.map(d => ({ docId: d.id, ...d.data() }));
-      autoCleanTrash();
       renderTrash();
     });
   }
 
-  // ── Auto-clean trash ──
+  // ── Auto-clean trash (solo al cargar, con delay para timestamps resueltos) ──
   async function autoCleanTrash() {
     const cutoff = Date.now() - retentionDays * 86400000;
     for (const item of trashItems) {
@@ -1066,6 +1065,8 @@
     await loadConfig();
     startListeners();
     setStatus("✓ Conectado", "ok");
+    // Limpieza de papelera: esperar 5s para que los timestamps estén resueltos
+    setTimeout(autoCleanTrash, 5000);
   } catch(e) {
     setStatus("✗ Error de conexión: " + e.message, "err");
     console.error(e);
